@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Detecção de Rachaduras</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Microserviço FastAPI</p>
+          <h1>Detecção e contagem de rachaduras com YOLO</h1>
+          <p class="subtitle">
+            Envie uma foto, receba a imagem anotada com máscara e a contagem
+            das rachaduras encontradas pelo peso <strong>{{ model_name }}</strong>.
+          </p>
+
+          <form id="upload-form" class="upload-form">
+            <label class="file-picker">
+              <input id="image-input" name="file" type="file" accept="image/*" required />
+              <span>Escolher imagem</span>
+            </label>
+            <button type="submit">Processar imagem</button>
+          </form>
+
+          <p class="hint">Formatos aceitos: JPG, PNG, JPEG, BMP e JFIF.</p>
+          <p id="status" class="status"></p>
+        </div>
+
+        <section class="result-panel">
+          <div class="result-header">
+            <div>
+              <p class="result-label">Resultado</p>
+              <h2 id="crack-count">Nenhuma imagem processada</h2>
+            </div>
+          </div>
+          <div class="preview-frame">
+            <img id="preview-image" alt="Pré-visualização da imagem anotada" />
+            <div id="preview-placeholder" class="placeholder">
+              A imagem processada aparecerá aqui.
+            </div>
+          </div>
+          <div id="detections" class="detections"></div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById('upload-form');
+      const input = document.getElementById('image-input');
+      const status = document.getElementById('status');
+      const count = document.getElementById('crack-count');
+      const preview = document.getElementById('preview-image');
+      const placeholder = document.getElementById('preview-placeholder');
+      const detections = document.getElementById('detections');
+
+      function setStatus(message, isError = false) {
+        status.textContent = message;
+        status.classList.toggle('error', isError);
+      }
+
+      function renderDetections(items) {
+        if (!items.length) {
+          detections.innerHTML = '<p class="empty">Nenhuma rachadura detectada.</p>';
+          return;
+        }
+
+        detections.innerHTML = items.map((item, index) => `
+          <article class="detection-item">
+            <span class="detection-index">#${index + 1}</span>
+            <div>
+              <strong>${item.class_name}</strong>
+              <p>Confiança ${(item.confidence * 100).toFixed(1)}%</p>
+            </div>
+          </article>
+        `).join('');
+      }
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const file = input.files?.[0];
+        if (!file) {
+          setStatus('Selecione uma imagem antes de enviar.', true);
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setStatus('Processando imagem...');
+        form.classList.add('loading');
+
+        try {
+          const response = await fetch('/api/predict', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || 'Falha ao processar a imagem.');
+          }
+
+          const result = await response.json();
+          count.textContent = `${result.count} rachadura(s) detectada(s)`;
+          preview.src = result.image_base64;
+          preview.classList.add('visible');
+          placeholder.style.display = 'none';
+          renderDetections(result.detections || []);
+          setStatus(`Imagem ${result.filename} processada com sucesso.`);
+        } catch (error) {
+          setStatus(error.message, true);
+        } finally {
+          form.classList.remove('loading');
+        }
+      });
+    </script>
+  </body>
+</html>
