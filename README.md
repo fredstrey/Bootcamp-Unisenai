@@ -4,6 +4,22 @@ Este projeto transforma o pipeline do notebook `inferencia_rachaduras.ipynb` em 
 
 O serviço recebe uma imagem, executa a inferência com o YOLO fine-tunado, retorna a imagem anotada com máscara e expõe a contagem de rachaduras detectadas.
 
+## Demonstração
+
+### Interface web
+
+<p align="center">
+  <img src="Print%20da%20aplica%C3%A7%C3%A3o%20Desafio%202.png" alt="Interface web do microserviço exibindo uma rachadura detectada com máscara e confiança" width="850">
+</p>
+
+### Inferência no conjunto de teste
+
+Resultado do modelo fine-tunado (`best.pt`) em imagens do conjunto de teste, com máscara de segmentação, caixa delimitadora e confiança de cada detecção.
+
+<p align="center">
+  <img src="inferencia_teste.png" alt="Grade com seis imagens do conjunto de teste e as rachaduras detectadas pelo modelo" width="850">
+</p>
+
 ## Estrutura
 
 - `app/main.py`: aplicação FastAPI, rotas e interface web.
